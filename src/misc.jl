@@ -1,6 +1,12 @@
 module Misc
 
-export CartProd, cartesian
+export
+    curry,
+    CartProd, cartesian
+
+# Currying
+
+curry(f, x) = (xs...) -> f(x, xs...)
 
 #
 # Cartesian product
