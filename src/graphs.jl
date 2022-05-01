@@ -2,6 +2,15 @@ module Graphs
 
 using StagedMRSC.Misc
 
+import Base: ==
+
+export
+    Graph, Back, Forth,
+    LazyGraph, Empty, Stop, Build,
+    unroll,
+    bad_graph, fl_bad_conf, cl_empty, cl_bad_conf, cl_empty_and_bad,
+    graph_size, cl_min_size
+
 #
 # Graphs of configurations
 #
@@ -30,21 +39,15 @@ using StagedMRSC.Misc
 #      introducing a let-expression or applying a lemma during
 #      two-level supercompilation).
 
-export
-    Graph, Back, Forth,
-    LazyGraph, Empty, Stop, Build,
-    unroll,
-    bad_graph
-
 # Graph
 
 abstract type Graph{C} end
 
-struct Back{C} <: Graph{C}
+mutable struct Back{C} <: Graph{C}
     c::C
 end
 
-struct Forth{C} <: Graph{C}
+mutable struct Forth{C} <: Graph{C}
     c::C
     gs::Vector{Graph{C}}
 end
@@ -63,6 +66,15 @@ function Base.show(io::IO, g::Forth)
     print(io, "])")
 end
 
+==(::G, ::G) where {C,G<:Graph{C}} =
+    false
+==(g1::Back{C}, g2::Back{C}) where {C} =
+    g1.c == g2.c
+==(g1::Forth{C}, g2::Forth{C}) where {C} =
+    g1.c == g2.c && g1.gs == g2.gs
+
+Gs{C} = Vector{Graph{C}}
+
 #
 # Lazy graphs of configurations
 #
@@ -78,30 +90,41 @@ end
 
 abstract type LazyGraph{C} end
 
-struct Empty{C} <: LazyGraph{C} end
+mutable struct Empty{C} <: LazyGraph{C} end
 
-struct Stop{C} <: LazyGraph{C}
+mutable struct Stop{C} <: LazyGraph{C}
     c::C
 end
 
-struct Build{C} <: LazyGraph{C}
+mutable struct Build{C} <: LazyGraph{C}
     c::C
     lss::Vector{Vector{LazyGraph{C}}}
 end
+
+==(::L, ::L) where {C,L<:LazyGraph{C}} =
+    false
+==(::Empty{C}, ::Empty{C}) where {C} = true
+==(l1::Stop{C}, l2::Stop{C}) where {C} =
+    l1.c == l2.c
+==(l1::Build{C}, l2::Build{C}) where {C} =
+    l1.c == l2.c && l1.lss == l2.lss
+
+LGs{C} = Vector{LazyGraph{C}}
+LGss{C} = Vector{Vector{LazyGraph{C}}}
 
 # LazyCoraph
 
 abstract type LazyCograph{C} end
 
-struct Empty8{C} <: LazyCograph{C} end
+mutable struct Empty8{C} <: LazyCograph{C} end
 
-struct Stop8{C} <: LazyCograph{C}
+mutable struct Stop8{C} <: LazyCograph{C}
     c::C
 end
 
-struct Build8{C} <: LazyCograph{C}
+mutable struct Build8{C} <: LazyCograph{C}
     c::C
-    lss::Function # () -> Vector{Vector{LazyGraph{C}}}
+    lss::Function # () -> LGss{C}
     lss_val::Union{Vector{Vector{LazyCograph{C}}},Nothing}
 
     function Build8(c::C, lss::Function) where {C}
@@ -109,7 +132,7 @@ struct Build8{C} <: LazyCograph{C}
     end
 end
 
-function get_lss(g::Build8{C})::Vector{Vector{LazyGraph{C}}} where {C}
+function get_lss(g::Build8{C})::LGss{C} where {C}
     if g.lss_val isa Nothing
         g.lss_val = g.lss()
     end
@@ -120,7 +143,7 @@ end
 # the interpreter `unroll` that generates a sequence of `Graph` from
 # the `LazyGraph` by executing commands recorded in the `LazyGraph`.
 
-function unroll(::LazyGraph{C})::Vector{Graph{C}} where {C} end
+function unroll(::L)::Gs{C} where {C,L<:LazyGraph{C}} end
 
 unroll(::Empty{C}) where {C} = []
 
@@ -175,7 +198,148 @@ function bad_graph(bad::Function, g::Back{C})::Bool where {C}
 end
 
 function bad_graph(bad::Function, g::Forth{C})::Bool where {C}
-    bad(g.c) || any(curry(bad_graph, bad), g.gs)
+    bad(g.c) || any(bad_graph(bad), g.gs)
 end
+
+bad_graph(bad) = g -> bad_graph(bad, g)
+
+# This filter removes the graphs containing "bad" configurations.
+
+function fl_bad_conf(bad::Function, gs::Gs{C})::Gs{C} where {C}
+    [filter(bad_graph(bad), gs)]
+end
+
+#
+# Some cleaners
+#
+
+# `cl_empty` removes subtrees that represent empty sets of graphs.
+
+function cl_empty(::LazyGraph{C})::LazyGraph{C} where {C} end
+
+cl_empty(l::Empty{C}) where {C} = l
+cl_empty(l::Stop{C}) where {C} = l
+
+function cl_empty(l::Build{C})::LazyGraph{C} where {C}
+    lss1 = [ls for ls in map(cl_empty, l.lss) if !(ls isa Nothing)]
+    length(lss1) == 0 ? Empty{C}() : Build{C}(l.c, lss1)
+end
+
+function cl_empty(ls::LGs{C})::Union{LGs{C},Nothing} where {C}
+    ls1 = [cl_empty(l) for l in ls]
+    any(l -> (l isa Empty), ls1) ? nothing : ls1
+end
+
+# Removing graphs that contain "bad" configurations.
+# The cleaner `cl_bad_conf` corresponds to the filter `fl_bad_conf`.
+# `cl_bad_conf` exploits the fact that "badness" is monotonic,
+# in the sense that a single "bad" configuration spoils the whole
+# graph.
+
+function cl_bad_conf(::Function, l::Empty{C})::LazyGraph{C} where {C}
+    l
+end
+
+function cl_bad_conf(bad::Function, l::Stop{C})::LazyGraph{C} where {C}
+    bad(l.c) ? Empty{C}() : l
+end
+
+function cl_bad_conf(bad::Function, l::Build{C})::LazyGraph{C} where {C}
+    if bad(l.c)
+        Empty{C}()
+    else
+        Build{C}(l.c, [[cl_bad_conf(bad, l1) for l1 in ls] for ls in l.lss])
+    end
+end
+
+cl_bad_conf(bad) = l -> cl_bad_conf(bad, l)
+
+#
+# The graph returned by `cl_bad_conf` may be cleaned by `cl_empty`.
+#
+
+cl_empty_and_bad(bad::Function, l::LazyGraph{C}) where {C} =
+    cl_empty(cl_bad_conf(bad)(l))
+
+cl_empty_and_bad(bad::Function) =
+    l -> cl_empty_and_bad(bad, l)
+
+#
+# Extracting a graph of minimal size (if any).
+#
+
+function graph_size(::Graph{C})::Int where {C} end
+
+graph_size(g::Back{C}) where {C} = 1
+graph_size(g::Forth{C}) where {C} =
+    1 + sum(map(graph_size, g.gs))
+
+# Now we define a cleaner `cl_min_size` that produces a lazy graph
+# representing the smallest graph (or the empty set of graphs).
+
+# We use a trick: ∞ is represented by typemax(Int).
+
+ILG{C} = Tuple{Int,LazyGraph{C}}
+ILGs{C} = Tuple{Int,LGs{C}}
+
+function cl_min_size(l::LazyGraph{C})::LazyGraph{C} where {C}
+    (_, l1) = sel_min_size(l)
+    l1
+end
+
+function sel_min_size(::LazyGraph{C})::ILG{C} where {C} end
+
+sel_min_size(::Empty{C}) where {C} =
+    (typemax(Int), Empty{C}())
+
+sel_min_size(l::Stop{C}) where {C} =
+    (1, l)
+
+function sel_min_size(l::Build{C}) where {C}
+    (k, ls) = sel_min_size2(l.lss)
+    if k == typemax(Int)
+        (typemax(Int), Empty())
+    else
+        (1 + k, Build(l.c, [ls]))
+    end
+end
+
+function select_min2(kx1::ILGs{C}, kx2::ILGs{C})::ILGs{C} where {C}
+    kx1[1] <= kx2[1] ? kx1 : kx2
+end
+
+function sel_min_size2(lss::LGss{C})::ILGs{C} where {C}
+    acc = (typemax(Int), LazyGraph{C}[])
+    for ls in lss
+        acc = select_min2(sel_min_size_and(ls), acc)
+    end
+    acc
+end
+
+function sel_min_size_and(ls::LGs{C})::ILGs{C} where {C}
+    k = 0
+    ls1 = []
+    for l in ls
+        (k1, l1) = sel_min_size(l)
+        k = add_min_size(k, k1)
+        push!(ls1, l1)
+    end
+    (k, ls1)
+end
+
+function add_min_size(x1::Int, x2::Int)::Int
+    if x1 == typemax(Int) || x2 == typemax(Int)
+        return typemax(Int)
+    else
+        return x1 + x2
+    end
+end
+
+#
+# `cl_min_size` is sound:
+#
+#  Let cl_min_size(l) == (k , l'). Then
+#     unroll(l') ⊆ unroll(l)
+#     k == graph_size((unroll(l')[0]))
 
 end # Graphs
