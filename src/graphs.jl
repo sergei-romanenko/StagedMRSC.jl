@@ -2,8 +2,6 @@ module Graphs
 
 using StagedMRSC.Misc
 
-import Base: ==
-
 export
     Graph, Back, Forth,
     LazyGraph, Empty, Stop, Build,
@@ -66,11 +64,11 @@ function Base.show(io::IO, g::Forth)
     print(io, "])")
 end
 
-==(::G, ::G) where {C,G<:Graph{C}} =
+Base.:(==)(::G, ::G) where {C,G<:Graph{C}} =
     false
-==(g1::Back{C}, g2::Back{C}) where {C} =
+Base.:(==)(g1::Back{C}, g2::Back{C}) where {C} =
     g1.c == g2.c
-==(g1::Forth{C}, g2::Forth{C}) where {C} =
+Base.:(==)(g1::Forth{C}, g2::Forth{C}) where {C} =
     g1.c == g2.c && g1.gs == g2.gs
 
 Gs{C} = Vector{Graph{C}}
@@ -101,12 +99,12 @@ mutable struct Build{C} <: LazyGraph{C}
     lss::Vector{Vector{LazyGraph{C}}}
 end
 
-==(::L, ::L) where {C,L<:LazyGraph{C}} =
+Base.:(==)(::L, ::L) where {C,L<:LazyGraph{C}} =
     false
-==(::Empty{C}, ::Empty{C}) where {C} = true
-==(l1::Stop{C}, l2::Stop{C}) where {C} =
+Base.:(==)(::Empty{C}, ::Empty{C}) where {C} = true
+Base.:(==)(l1::Stop{C}, l2::Stop{C}) where {C} =
     l1.c == l2.c
-==(l1::Build{C}, l2::Build{C}) where {C} =
+Base.:(==)(l1::Build{C}, l2::Build{C}) where {C} =
     l1.c == l2.c && l1.lss == l2.lss
 
 LGs{C} = Vector{LazyGraph{C}}

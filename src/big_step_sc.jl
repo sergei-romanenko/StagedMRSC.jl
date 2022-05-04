@@ -65,19 +65,21 @@ const History{C} = LinkedList{C}
 
 abstract type ScWorld{C} end
 
-function is_foldable_to(::ScWorld{C}, c1::C, c2::C)::Bool where {C} end
-function is_dangerous(::ScWorld{C}, ::History{C})::Bool where {C} end
-function develop(::ScWorld{C}, ::C)::Bool where {C} end
+function conf_type(::Type{ScWorld}) end
 
-function is_foldable_to_history(w::ScWorld{C}, c::C, h::History)::Bool where {C}
+function is_foldable_to(::ScWorld, c1, c2)::Bool where {C} end
+function is_dangerous(ScWorld, ::History{C})::Bool where {C} end
+function develop(::ScWorld, ::C)::Bool where {C} end
+
+function is_foldable_to_history(w::ScWorld, c::C, h::History{C})::Bool where {C}
     any(map(c1 -> is_foldable_to(w, c, c1), h))
 end
 
 # Big-step multi-result supercompilation
 # (The naive version builds Cartesian products immediately.)
 
-function naive_mrsc_loop(
-    w::ScWorld{C}, h::History{C}, c::C)::Vector{Graph{C}} where {C}
+function naive_mrsc_loop(w::ScWorld, h, c)
+    C = conf_type(w)
     if is_foldable_to_history(w, c, h)
         Graph{C}[Back(c)]
     elseif is_dangerous(w, h)
@@ -90,8 +92,9 @@ function naive_mrsc_loop(
     end
 end
 
-function naive_mrsc(w::ScWorld{C}, c::C)::Vector{Graph{C}} where {C}
-    naive_mrsc_loop(w, nil(C), c)
+function naive_mrsc(w::ScWorld, c)
+    C = conf_type(w)
+    naive_mrsc_loop(w, nil(C), c::C)
 end
 
 # "Lazy" multi-result supercompilation.
@@ -101,8 +104,8 @@ end
 # with `unroll` being an "interpreter" that evaluates the "program"
 # returned by lazy_mrsc.
 
-function lazy_mrsc_loop(w::ScWorld{C},
-    h::History{C}, c::C)::LazyGraph{C} where {C}
+function lazy_mrsc_loop(w::ScWorld, h, c)
+    C = conf_type(w)
     if is_foldable_to_history(w, c, h)
         Stop{C}(c)
     elseif is_dangerous(w, h)
@@ -114,8 +117,9 @@ function lazy_mrsc_loop(w::ScWorld{C},
     end
 end
 
-function lazy_mrsc(w::ScWorld{C}, c0::C)::LazyGraph{C} where {C}
-    lazy_mrsc_loop(w, nil(C), c0)
+function lazy_mrsc(w::ScWorld, c0)
+    C = conf_type(w)
+    lazy_mrsc_loop(w, nil(C), c0::C)
 end
 
 end

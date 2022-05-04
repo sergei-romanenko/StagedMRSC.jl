@@ -17,11 +17,11 @@ gs3 =
         IForth(0, [IForth(1, [IForth(2, [IForth(3, [IBack(2)])])])])]
 
 function naive_mrsc_int(c::Int)
-    naive_mrsc(IntSCWorld(), c)
+    naive_mrsc(IntScWorld(), c)
 end
 
 function lazy_mrsc_int(c::Int)
-    lazy_mrsc(IntSCWorld(), c)
+    lazy_mrsc(IntScWorld(), c)
 end
 
 @testset "BigStepSC - naive_mrsc" begin
