@@ -1,8 +1,8 @@
-module BigStepSC_Test
+module BigStepSc_Test
 
 using Test
 using StagedMRSC.Graphs
-using StagedMRSC.BigStepSC
+using StagedMRSC.BigStepSc
 
 include("mock_sc_worlds.jl")
 
@@ -24,11 +24,11 @@ function lazy_mrsc_int(c::Int)
     lazy_mrsc(IntScWorld(), c)
 end
 
-@testset "BigStepSC - naive_mrsc" begin
+@testset "BigStepSc - naive_mrsc" begin
     @test naive_mrsc_int(0) == gs3
 end
 
-@testset "BigStepSC - lazy_mrsc" begin
+@testset "BigStepSc - lazy_mrsc" begin
     @test unroll(lazy_mrsc_int(0)) == gs3
     @test unroll(cl_min_size(lazy_mrsc_int(0))) ==
           [IForth(0, [IForth(1, [IForth(2, [IBack(1)])])])]

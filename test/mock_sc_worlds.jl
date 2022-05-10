@@ -1,4 +1,4 @@
-import StagedMRSC.BigStepSC: conf_type, is_dangerous, is_foldable_to, develop
+import StagedMRSC.BigStepSc: conf_type, is_dangerous, is_foldable_to, develop
 
 struct IntScWorld <: ScWorld end
 

@@ -1,13 +1,13 @@
 module Graphs
 
-using StagedMRSC.Misc
-
 export
     Graph, Back, Forth,
     LazyGraph, Empty, Stop, Build,
     unroll,
     bad_graph, fl_bad_conf, cl_empty, cl_bad_conf, cl_empty_and_bad,
     graph_size, cl_min_size
+
+using StagedMRSC.Misc
 
 #
 # Graphs of configurations
@@ -149,8 +149,8 @@ unroll(l::Stop{C}) where {C} = Graph{C}[Back{C}(l.c)]
 
 function unroll(l::Build{C}) where {C}
     gss = Gs{C}[gs
-           for ls in l.lss
-           for gs in cartesian(Gs{C}[unroll(l) for l in ls])]
+                for ls in l.lss
+                for gs in cartesian(Gs{C}[unroll(l) for l in ls])]
     return Graph{C}[Forth{C}(l.c, gs) for gs in gss]
 end
 

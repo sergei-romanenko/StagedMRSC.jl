@@ -1,4 +1,4 @@
-module BigStepSC
+module BigStepSc
 
 export
     History, ScWorld, conf_type,

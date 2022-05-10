@@ -2,7 +2,7 @@ module Counters_Test
 
 using Test
 using StagedMRSC.Graphs
-using StagedMRSC.BigStepSC
+using StagedMRSC.BigStepSc
 using StagedMRSC.Counters
 
 import StagedMRSC.Counters: conf_length, start, max_N, max_depth, rules
