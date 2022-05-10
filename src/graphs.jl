@@ -141,17 +141,17 @@ end
 # the interpreter `unroll` that generates a sequence of `Graph` from
 # the `LazyGraph` by executing commands recorded in the `LazyGraph`.
 
-function unroll(::L)::Gs{C} where {C,L<:LazyGraph{C}} end
+# function unroll(::L)::Gs{C} where {C,L<:LazyGraph{C}} end
 
-unroll(::Empty{C}) where {C} = []
+unroll(::Empty{C}) where {C} = Graph{C}[]
 
-unroll(l::Stop{C}) where {C} = [Back{C}(l.c)]
+unroll(l::Stop{C}) where {C} = Graph{C}[Back{C}(l.c)]
 
 function unroll(l::Build{C}) where {C}
-    gss = [gs
+    gss = Gs{C}[gs
            for ls in l.lss
-           for gs in cartesian([unroll(l) for l in ls])]
-    return [Forth{C}(l.c, gs) for gs in gss]
+           for gs in cartesian(Gs{C}[unroll(l) for l in ls])]
+    return Graph{C}[Forth{C}(l.c, gs) for gs in gss]
 end
 
 # Usually, we are not interested in the whole bag `unroll(l)`.
@@ -296,7 +296,7 @@ sel_min_size(l::Stop{C}) where {C} =
 function sel_min_size(l::Build{C}) where {C}
     (k, ls) = sel_min_size2(l.lss)
     if k == typemax(Int)
-        (typemax(Int), Empty())
+        (typemax(Int), Empty{C}())
     else
         (1 + k, Build(l.c, [ls]))
     end

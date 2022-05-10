@@ -1,6 +1,6 @@
-struct IntScWorld <: ScWorld{Int} end
-
 import StagedMRSC.BigStepSC: conf_type, is_dangerous, is_foldable_to, develop
+
+struct IntScWorld <: ScWorld end
 
 conf_type(::IntScWorld) = Int
 

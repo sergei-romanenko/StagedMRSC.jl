@@ -13,10 +13,9 @@ using StagedMRSC.Misc
   @test length(CartProd([[1, 1, 1], [2, 2, 2, 2, 2]])) == 15
 
   @test cartesian(Vector{Int64}[]) == []
-
+  @test cartesian(Vector{Int64}[[]]) == []
+  @test cartesian(Vector{Int64}[[1, 2], [], [100, 200]]) == []
   @test cartesian([[1, 2]]) == [[1], [2]]
-
-  @test cartesian([[1, 2], [], [100, 200]]) == []
 
   @test cartesian([[1, 2], [10, 20, 30], [100, 200]]) ==
         [[1, 10, 100], [1, 10, 200],

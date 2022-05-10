@@ -1,7 +1,7 @@
 module BigStepSC
 
 export
-    History, ScWorld,
+    History, ScWorld, conf_type,
     naive_mrsc, lazy_mrsc
 
 # ### Schemes of different types of big-step supercompilation
@@ -63,17 +63,25 @@ using DataStructures
 
 const History{C} = LinkedList{C}
 
-abstract type ScWorld{C} end
+abstract type ScWorld end
 
-function conf_type(::Type{ScWorld}) end
+# function conf_type(::ScWorld) end
+function conf_type end
 
-function is_foldable_to(::ScWorld, c1, c2)::Bool where {C} end
-function is_dangerous(ScWorld, ::History{C})::Bool where {C} end
+# function is_foldable_to(::ScWorld, ::C, ::C)::Bool where {C} end
+function is_foldable_to end
+# function is_dangerous(ScWorld, ::History{C})::Bool where {C} end
+function is_dangerous end
 function develop(::ScWorld, ::C)::Bool where {C} end
 
-function is_foldable_to_history(w::ScWorld, c::C, h::History{C})::Bool where {C}
+# function is_foldable_to_history(w::ScWorld, c::C, h::History{C})::Bool where {C}
+#     any(map(c1 -> is_foldable_to(w, c, c1), h))
+# end
+
+function is_foldable_to_history(w::ScWorld, c, h)::Bool
     any(map(c1 -> is_foldable_to(w, c, c1), h))
 end
+
 
 # Big-step multi-result supercompilation
 # (The naive version builds Cartesian products immediately.)
@@ -81,14 +89,14 @@ end
 function naive_mrsc_loop(w::ScWorld, h, c)
     C = conf_type(w)
     if is_foldable_to_history(w, c, h)
-        Graph{C}[Back(c)]
+        Graph{C}[Back{C}(c)]
     elseif is_dangerous(w, h)
         Graph{C}[]
     else
         css = develop(w, c)
         gsss = [cartesian([naive_mrsc_loop(w, cons(c, h), c1) for c1 in cs])
                 for cs in css]
-        [Forth{C}(c, gs) for gs in Iterators.flatten(gsss)]
+        Graph{C}[Forth{C}(c, gs) for gs in Iterators.flatten(gsss)]
     end
 end
 

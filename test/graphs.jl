@@ -1,6 +1,7 @@
 module Graphs_Test
 
 using Test
+using StagedMRSC.Misc
 using StagedMRSC.Graphs
 
 const IGraph = Graph{Int64}
@@ -133,10 +134,26 @@ end
   @test cl_min_size(l3) == IBuild(1, [[IBuild(3, [[IStop(4)]])]])
 end
 
-@testset "Graphs cl_min_size, unroll" begin
+@testset "Graphs - cl_min_size, unroll" begin
   min_l = cl_min_size(l3)
   min_g = unroll(min_l)[1]
   @test min_g == IForth(1, [IForth(3, [IBack(4)])])
+end
+
+@testset "Graphs - cartesian" begin
+  @test cartesian(Vector{IGraph}[]) ==
+        Vector{IGraph}[]
+  @test cartesian(Vector{IGraph}[[]]) ==
+        Vector{IGraph}[]
+  @test cartesian(Vector{IGraph}[[IBack(1), IBack(2)]]) ==
+        Vector{IGraph}[[IBack(1)], [IBack(2)]]
+  @test cartesian(Vector{IGraph}[[IBack(1)], []]) ==
+        Vector{IGraph}[]
+  @test cartesian(Vector{IGraph}[
+    [IBack(1), IBack(2)], [IBack(10), IBack(20)]]) ==
+        Vector{IGraph}[
+    [Back(1), Back(10)], [Back(1), Back(20)],
+    [Back(2), Back(10)], [Back(2), Back(20)]]
 end
 
 end
