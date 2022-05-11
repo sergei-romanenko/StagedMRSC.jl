@@ -5,24 +5,22 @@ using StagedMRSC.Graphs
 using StagedMRSC.BigStepSc
 using StagedMRSC.Counters
 
-import StagedMRSC.Counters: conf_length, start, max_N, max_depth, rules
+import StagedMRSC.Counters: start, rules
 
-struct TestWorld <: CountersScWorld end
+struct TestCW <: CountersWorld end
 
-conf_length(::TestWorld) = 2
+start(::TestCW) = NW[2, 0]
 
-start(::TestWorld) = NW[2, 0]
-
-rules(::TestWorld, i::NW, j::NW) = [
+rules(::TestCW, i::NW, j::NW) = [
     (i >=′ 1, [i -′ 1, j +′ 1]),
     (j >=′ 1, [i +′ 1, j -′ 1])]
 
-is_unsafe(::TestWorld, c) = false
+is_unsafe(::TestCW, c) = false
 
-max_N(::TestWorld) = 3
-max_depth(::TestWorld) = 10
+struct TestScW{MAX_NW,MAX_DEPTH} <:
+       CountersScWorld{TestCW,MAX_NW,MAX_DEPTH} end
 
-const C = conf_type(TestWorld())
+const C = conf_type(TestScW{3,10}())
 const CGraph = Graph{C}
 const CBack = Back{C}
 const CForth = Forth{C}
@@ -34,7 +32,7 @@ const mg =
             CBack([W(), W()])])])
 
 @testset "Counters_Test" begin
-    w = TestWorld()
+    w = TestScW{3,10}()
     start_conf = start(w)
     gs = naive_mrsc(w, start_conf)
     # println("gs.length == $(length(gs))")

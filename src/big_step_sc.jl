@@ -65,28 +65,18 @@ const History{C} = LinkedList{C}
 
 abstract type ScWorld end
 
-# function conf_type(::ScWorld) end
-function conf_type end
+function conf_type(w) end
+function is_foldable_to(w, c, c1) end
+function is_dangerous(w, h) end
+function develop(w, c) end
 
-# function is_foldable_to(::ScWorld, ::C, ::C)::Bool where {C} end
-function is_foldable_to end
-# function is_dangerous(ScWorld, ::History{C})::Bool where {C} end
-function is_dangerous end
-function develop(::ScWorld, ::C)::Bool where {C} end
-
-# function is_foldable_to_history(w::ScWorld, c::C, h::History{C})::Bool where {C}
-#     any(map(c1 -> is_foldable_to(w, c, c1), h))
-# end
-
-function is_foldable_to_history(w::ScWorld, c, h)::Bool
+is_foldable_to_history(w, c, h) =
     any(map(c1 -> is_foldable_to(w, c, c1), h))
-end
-
 
 # Big-step multi-result supercompilation
 # (The naive version builds Cartesian products immediately.)
 
-function naive_mrsc_loop(w::ScWorld, h, c)
+function naive_mrsc_loop(w, h, c)
     C = conf_type(w)
     if is_foldable_to_history(w, c, h)
         Graph{C}[Back{C}(c)]
@@ -100,7 +90,7 @@ function naive_mrsc_loop(w::ScWorld, h, c)
     end
 end
 
-function naive_mrsc(w::ScWorld, c)
+function naive_mrsc(w, c)
     C = conf_type(w)
     naive_mrsc_loop(w, nil(C), c::C)
 end
@@ -112,7 +102,7 @@ end
 # with `unroll` being an "interpreter" that evaluates the "program"
 # returned by lazy_mrsc.
 
-function lazy_mrsc_loop(w::ScWorld, h, c)
+function lazy_mrsc_loop(w, h, c)
     C = conf_type(w)
     if is_foldable_to_history(w, c, h)
         Stop{C}(c)
@@ -125,7 +115,7 @@ function lazy_mrsc_loop(w::ScWorld, h, c)
     end
 end
 
-function lazy_mrsc(w::ScWorld, c0)
+function lazy_mrsc(w, c0)
     C = conf_type(w)
     lazy_mrsc_loop(w, nil(C), c0::C)
 end
