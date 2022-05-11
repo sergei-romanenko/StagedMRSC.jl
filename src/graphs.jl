@@ -73,6 +73,24 @@ Base.:(==)(g1::Forth{C}, g2::Forth{C}) where {C} =
 
 Gs{C} = Vector{Graph{C}}
 
+# Graph pretty printer
+
+graph_pretty_printer(g::Back{C}, pp_conf, indent) where {C} =
+    string(indent, "|__", pp_conf(g.c), "*")
+
+function graph_pretty_printer(g::Forth{C}, pp_conf, indent) where {C}
+    sb = []
+    push!(sb, indent, "|__", pp_conf(g.c))
+    for g in g.gs
+        push!(sb, "\n  ", indent, "|")
+        push!(sb, "\n", graph_pretty_printer(g, pp_conf, indent + "  "))
+    end
+    join(sb)
+end
+
+graph_pretty_printer(g::Graph{C}, pp_conf) where {C} =
+    graph_pretty_printer(g, pp_conf, "")
+
 #
 # Lazy graphs of configurations
 #
@@ -84,7 +102,7 @@ Gs{C} = Vector{Graph{C}}
 # by the "lazy" (staged) version of multi-result
 # supercompilation.
 
-#/ LazyGraph
+# LazyGraph
 
 abstract type LazyGraph{C} end
 

@@ -2,6 +2,7 @@ module Counters
 
 export
   W, NW,
+  nw_conf_pp,
   rule_type, start, rules, is_unsafe,
   CountersScWorld,
   +′, -′, >=′, ==′, in′
@@ -51,6 +52,11 @@ Base.convert(::Type{NW}, i::Int) = N(i)
 in′(i::N, j::N) = i.n == j.n
 in′(::NW, ::W) = true
 in′(::W, ::N) = false
+
+nw_conf_pp(c::Vector{NW}) =
+  string("(", join(map(string, c), ", "), ")")
+
+# CountersScWorld
 
 abstract type CountersScWorld <: ScWorld end
 
