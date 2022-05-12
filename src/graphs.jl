@@ -2,6 +2,7 @@ module Graphs
 
 export
     Graph, Back, Forth,
+    graph_pretty_printer,
     LazyGraph, Empty, Stop, Build,
     unroll,
     bad_graph, fl_bad_conf, cl_empty, cl_bad_conf, cl_empty_and_bad,
@@ -83,7 +84,7 @@ function graph_pretty_printer(g::Forth{C}, pp_conf, indent) where {C}
     push!(sb, indent, "|__", pp_conf(g.c))
     for g in g.gs
         push!(sb, "\n  ", indent, "|")
-        push!(sb, "\n", graph_pretty_printer(g, pp_conf, indent + "  "))
+        push!(sb, "\n", graph_pretty_printer(g, pp_conf, indent * "  "))
     end
     join(sb)
 end

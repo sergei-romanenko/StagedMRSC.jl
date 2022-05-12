@@ -4,9 +4,7 @@ export
   W, NW,
   nw_conf_pp,
   start, rules, is_unsafe,
-  CountersWorld,
-  +′, -′, >=′, ==′, in′,
-  CountersScWorld
+  CountersWorld, CountersScWorld
 
 using StagedMRSC.Misc
 using StagedMRSC.BigStepSc
@@ -15,7 +13,7 @@ import StagedMRSC.BigStepSc: conf_type, is_dangerous, is_foldable_to, develop
 
 abstract type NW end
 
-# Infinity
+# All Ns
 struct W <: NW end
 
 struct N <: NW
@@ -28,31 +26,30 @@ end
 
 function Base.show(io::IO, i::N)
   print(io, i.n)
-  print(io, "′")
+  # print(io, "′")
 end
 
 Base.convert(::Type{NW}, i::Int) = N(i)
 
-+′(i::N, j::N) = N(i.n + j.n)
-+′(::Int, ::W) = W()
-+′(::W, ::NW) = W()
-+′(i::NW, j::Int) = i +′ N(j)
+Base.:(+)(i::N, j::N) = N(i.n + j.n)
+Base.:(+)(i::N, j::Int) = N(i.n + j)
+Base.:(+)(::N, ::W) = W()
+Base.:(+)(::W, j) = W()
 
--′(i::N, j::N) = N(i.n - j.n)
--′(::N, ::W) = W()
--′(::W, ::NW) = W()
--′(i::NW, j::Int) = i -′ N(j)
+Base.:(-)(i::N, j::N) = N(i.n - j.n)
+Base.:(-)(i::N, j::Int) = N(i.n - j)
+Base.:(-)(::N, ::W) = W()
+Base.:(-)(::W, j) = W()
 
->=′(i::N, j::N) = i.n >= j.n
->=′(::W, ::N) = true
->=′(i::NW, j::Int) = i >=′ N(j)
+Base.:(>=)(i::N, j::Int) = i.n >= j
+Base.:(>=)(::W, ::Int) = true
 
-==′(i::N, j::N) = i.n == j.n
-==′(::W, ::N) = true
+Base.:(==)(i::N, j::Int) = i.n == j
+Base.:(==)(::W, ::Int) = true
 
-in′(i::N, j::N) = i.n == j.n
-in′(::NW, ::W) = true
-in′(::W, ::N) = false
+is_in(i::N, j::N) = i.n == j.n
+is_in(::NW, ::W) = true
+is_in(::W, ::N) = false
 
 nw_conf_pp(c::Vector{NW}) =
   string("(", join(map(string, c), ", "), ")")
@@ -65,7 +62,13 @@ function start end
 function rules end
 function is_unsafe end
 
-abstract type CountersScWorld{CW,MAX_NW,MAX_DEPTH} <: ScWorld end
+is_unsafe(w::CountersWorld, c::Vector{NW}) =
+  is_unsafe(w, c...)
+
+is_unsafe(w::CountersWorld) =
+  c -> is_unsafe(w, c)
+
+struct CountersScWorld{CW,MAX_NW,MAX_DEPTH} <: ScWorld end
 
 conf_type(::CountersScWorld) = Vector{NW}
 
@@ -94,7 +97,7 @@ function is_dangerous(w, h)
 end
 
 is_foldable_to(w, c1, c2) =
-  all(in′(nw1, nw2) for (nw1, nw2) in Iterators.zip(c1, c2))
+  all(is_in(nw1, nw2) for (nw1, nw2) in Iterators.zip(c1, c2))
 
 # Driving is deterministic
 
