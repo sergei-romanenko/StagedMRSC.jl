@@ -4,6 +4,7 @@ export
     Graph, Back, Forth,
     graph_pretty_printer,
     LazyGraph, Empty, Stop, Build,
+    LazyGraph8, Empty8, Stop8, Build8, get_lss,
     unroll,
     bad_graph, fl_bad_conf, cl_empty, cl_bad_conf, cl_empty_and_bad,
     graph_size, cl_min_size
@@ -126,35 +127,8 @@ Base.:(==)(l1::Stop{C}, l2::Stop{C}) where {C} =
 Base.:(==)(l1::Build{C}, l2::Build{C}) where {C} =
     l1.c == l2.c && l1.lss == l2.lss
 
-LGs{C} = Vector{LazyGraph{C}}
-LGss{C} = Vector{Vector{LazyGraph{C}}}
-
-# LazyCoraph
-
-abstract type LazyCograph{C} end
-
-mutable struct Empty8{C} <: LazyCograph{C} end
-
-mutable struct Stop8{C} <: LazyCograph{C}
-    c::C
-end
-
-mutable struct Build8{C} <: LazyCograph{C}
-    c::C
-    lss::Function # () -> LGss{C}
-    lss_val::Union{Vector{Vector{LazyCograph{C}}},Nothing}
-
-    function Build8(c::C, lss::Function) where {C}
-        new{C}(c, lss, nothing)
-    end
-end
-
-function get_lss(g::Build8{C})::LGss{C} where {C}
-    if g.lss_val isa Nothing
-        g.lss_val = g.lss()
-    end
-    g.lss_val
-end
+const Ls{C} = Vector{LazyGraph{C}}
+const Lss{C} = Vector{Vector{LazyGraph{C}}}
 
 # The semantics of a `LazyGraph` is formally defined by
 # the interpreter `unroll` that generates a sequence of `Graph` from
@@ -242,7 +216,7 @@ function cl_empty(l::Build{C})::LazyGraph{C} where {C}
     length(lss1) == 0 ? Empty{C}() : Build{C}(l.c, lss1)
 end
 
-function cl_empty(ls::LGs{C})::Union{LGs{C},Nothing} where {C}
+function cl_empty(ls::Ls{C})::Union{Ls{C},Nothing} where {C}
     ls1 = [cl_empty(l) for l in ls]
     any(l -> (l isa Empty), ls1) ? nothing : ls1
 end
@@ -296,15 +270,15 @@ graph_size(g::Forth{C}) where {C} =
 
 # We use a trick: ∞ is represented by typemax(Int).
 
-ILG{C} = Tuple{Int,LazyGraph{C}}
-ILGs{C} = Tuple{Int,LGs{C}}
+const IL{C} = Tuple{Int,LazyGraph{C}}
+const ILs{C} = Tuple{Int,Ls{C}}
 
 function cl_min_size(l::LazyGraph{C})::LazyGraph{C} where {C}
     (_, l1) = sel_min_size(l)
     l1
 end
 
-function sel_min_size(::LazyGraph{C})::ILG{C} where {C} end
+function sel_min_size(::LazyGraph{C})::IL{C} where {C} end
 
 sel_min_size(::Empty{C}) where {C} =
     (typemax(Int), Empty{C}())
@@ -321,11 +295,11 @@ function sel_min_size(l::Build{C}) where {C}
     end
 end
 
-function select_min2(kx1::ILGs{C}, kx2::ILGs{C})::ILGs{C} where {C}
+function select_min2(kx1::ILs{C}, kx2::ILs{C})::ILs{C} where {C}
     kx1[1] <= kx2[1] ? kx1 : kx2
 end
 
-function sel_min_size2(lss::LGss{C})::ILGs{C} where {C}
+function sel_min_size2(lss::Lss{C})::ILs{C} where {C}
     acc = (typemax(Int), LazyGraph{C}[])
     for ls in lss
         acc = select_min2(sel_min_size_and(ls), acc)
@@ -333,7 +307,7 @@ function sel_min_size2(lss::LGss{C})::ILGs{C} where {C}
     acc
 end
 
-function sel_min_size_and(ls::LGs{C})::ILGs{C} where {C}
+function sel_min_size_and(ls::Ls{C})::ILs{C} where {C}
     k = 0
     ls1 = []
     for l in ls

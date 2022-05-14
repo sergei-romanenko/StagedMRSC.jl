@@ -2,6 +2,7 @@ module BigStepSc
 
 export
     History, ScWorld, conf_type,
+    is_foldable_to_history,
     naive_mrsc, lazy_mrsc
 
 # ### Schemes of different types of big-step supercompilation

@@ -92,9 +92,8 @@ is_too_big_nw(w, i::N) = i.n >= max_nw(w)
 is_too_big(w) =
   c -> any(i -> is_too_big_nw(w, i), c)
 
-function is_dangerous(w, h)
+is_dangerous(w, h) =
   any(is_too_big(w), h) || length(h) >= max_depth(w)
-end
 
 is_foldable_to(w, c1, c2) =
   all(is_in(nw1, nw2) for (nw1, nw2) in Iterators.zip(c1, c2))

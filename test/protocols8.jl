@@ -1,7 +1,8 @@
-module Protocols_Test
+module Protocols8_Test
 
 using Test
 using StagedMRSC.BigStepSc
+using StagedMRSC.BigStepSc8
 using StagedMRSC.Counters
 using StagedMRSC.Graphs
 using StagedMRSC.Protocols
@@ -11,8 +12,9 @@ function run_min_sc(cw::CountersWorld, m::Int, d::Int)
     name = last(split(string(typeof(cw)), "."))
     print("\n$name ")
     w = CountersScWorld{typeof(cw),m,d}()
-    l = lazy_mrsc(w, start(w))
-    sl = cl_empty_and_bad(is_unsafe(cw), l)
+    l8 = build_graph8(w, start(w))
+    sl8 = cl8_bad_conf(is_unsafe(cw), l8)
+    sl = prune(w, sl8)
     len_usl, size_usl = size_unroll(sl)
     println("($len_usl, $size_usl)")
     ml = cl_min_size(sl)
@@ -25,20 +27,20 @@ function run_min_sc(cw::CountersWorld, m::Int, d::Int)
     end
 end
 
-@testset "Protocols" begin
+@testset "Protocols8" begin
     run_min_sc(Synapse(), 3, 10)
     run_min_sc(MSI(), 3, 10)
     run_min_sc(MOSI(), 3, 10)
-    run_min_sc(ReaderWriter(), 3, 5)
     run_min_sc(MESI(), 3, 10)
-    run_min_sc(MOESI(), 3, 5)
-    run_min_sc(Illinois(), 3, 5)
-    run_min_sc(Berkley(), 3, 5)
-    run_min_sc(Firefly(), 3, 5)
+    run_min_sc(MOESI(), 3, 10)
+    run_min_sc(Illinois(), 3, 10)
+    run_min_sc(Berkley(), 3, 10)
+    run_min_sc(Firefly(), 3, 10)
+    run_min_sc(Xerox(), 3, 10)
+    run_min_sc(ReaderWriter(), 3, 5)
     run_min_sc(DataRace(), 3, 10)
     # Slow!
-    # run_min_sc(Futurebus(), 3, 5)
-    # run_min_sc(Xerox(), 3, 5)
+    # run_min_sc(Futurebus(), 3, 7)
 end
 
 end
