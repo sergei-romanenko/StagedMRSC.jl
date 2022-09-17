@@ -1,7 +1,8 @@
 module BigStepSc
 
 export
-    History, ScWorld, conf_type,
+    History, ScWorld,
+    conf_type, is_foldable_to, is_dangerous, develop,
     is_foldable_to_history,
     naive_mrsc, lazy_mrsc
 
@@ -30,7 +31,7 @@ export
 #   they may represent sets of states in any form/language and as well may
 #   contain any _additional_ information.
 #
-# * `is_foldable_to` is a "foldability relation". is_foldable_to(c, c') means
+# * `is_foldable_to` is a "foldability relation". is_foldable_to(w, c, c') means
 #   that c is foldable to c'.
 #   (In such cases c' is usually said to be " more general than c".)
 #
@@ -40,22 +41,22 @@ export
 #   (or "decomposed into") configurations in `cs`.
 #
 #   Suppose that driving is determinstic and, given a configuration `c`,
-#   produces a list of configurations `drive(c)`. Suppose that rebuilding
+#   produces a list of configurations `drive(w, c)`. Suppose that rebuilding
 #   (generalization, application of lemmas) is non-deterministic and
-#   `rebuild(c)` is the list of configurations that can be produced by
+#   `rebuild(w, c)` is the list of configurations that can be produced by
 #   rebuilding. Then (in this special case) `develop` is implemented
 #   as follows:
 #
-#       develop(c) = [drive(c)] + map(lambda cs: [cs] , rebuild(c))
+#       develop(w, c) = [[drive(w, c)]; rebuild(w, c)]
 #
 # * `History` is a list of configuration that have been produced
 #   in order to reach the current configuration.
 #
 # * `is_dangerous` is a "whistle" that is used to ensure termination of
-#   supercompilation. `is_dangerous(h)` means that the history has become
+#   supercompilation. `is_dangerous(w, h)` means that the history has become
 #   "too large".
 #
-# * `is_foldable_to_history(c, h)` means that `c` is foldable to a configuration
+# * `is_foldable_to_history(w, c, h)` means that `c` is foldable to a configuration
 #   in the history `h`.
 
 using StagedMRSC.Misc
@@ -91,9 +92,9 @@ function naive_mrsc_loop(w, h, c)
     end
 end
 
-function naive_mrsc(w, c)
+function naive_mrsc(w, c0)
     C = conf_type(w)
-    naive_mrsc_loop(w, nil(C), c::C)
+    naive_mrsc_loop(w, nil(C), c0::C)
 end
 
 # "Lazy" multi-result supercompilation.

@@ -92,10 +92,10 @@ is_too_big_nw(w, i::N) = i.n >= max_nw(w)
 is_too_big(w) =
   c -> any(i -> is_too_big_nw(w, i), c)
 
-is_dangerous(w, h) =
+is_dangerous(w::CountersScWorld, h) =
   any(is_too_big(w), h) || length(h) >= max_depth(w)
 
-is_foldable_to(w, c1, c2) =
+is_foldable_to(::CountersScWorld, c1, c2) =
   all(is_in(nw1, nw2) for (nw1, nw2) in Iterators.zip(c1, c2))
 
 # Driving is deterministic
@@ -113,12 +113,11 @@ rebuild1(i::N) = NW[i, W()]
 
 function rebuild(w, c)
   C = conf_type(w)
-  rb = [rebuild1(nw) for nw in c]
   cs = cartesian([rebuild1(nw) for nw in c])
   [C[c1] for c1 in cs if !(c1 == c)]
 end
 
-function develop(w, c)
+function develop(w::CountersScWorld, c)
   [drive(w, c); rebuild(w, c)]
 end
 
